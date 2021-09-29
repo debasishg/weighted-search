@@ -24,19 +24,11 @@ object TreeEnumerationsAlgebra extends App with Ops {
     case Node(x, xs) => choices(xs)(poe) ++ List(x)
   }
 
-  def zipL[T]: List[Multiset[T]] => List[Multiset[T]] => List[Multiset[T]] = first =>
-    second =>
-      (first, second) match {
-        case (f, Nil)           => f
-        case (Nil, s)           => s
-        case (f :: fs, s :: ss) => f.sum(s) :: zipL(fs)(ss)
-      }
-
   // bfe (x & xs) = pure x <cat> choices bfe xs 
   //   where lhs <cat> rhs = lhs <|> wrap rhs
   def bfe[T]: Tree[T] => Levels[T] = {
-    case Tip         => Levels(Nil)
-    case Node(x, xs) => Levels.cat(Levels.pure(x), choices(xs)(bfe))
+    case Tip          => Levels(Nil)
+    case Node(x, xs)  => Levels.cat(Levels.pure(x), choices(xs)(bfe))
   }
 
 

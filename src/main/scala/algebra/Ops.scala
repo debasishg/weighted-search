@@ -9,6 +9,14 @@ import spire.algebra.MultiplicativeMonoid
 import spire.algebra.AdditiveMonoid
 
 trait Ops {
+  def zipL[T]: List[Multiset[T]] => List[Multiset[T]] => List[Multiset[T]] = first =>
+    second =>
+      (first, second) match {
+        case (f, Nil)           => f
+        case (Nil, s)           => s
+        case (f :: fs, s :: ss) => f.sum(s) :: zipL(fs)(ss)
+      }
+
   // liftA2 :: Applicative f ⇒ (a → b → c) → f a → f b → f c 
   // liftA2 f xs ys = pure f <*> xs <*> ys
 	def liftA2[F[_]: Applicative, A, B, C](fa: F[A], fb: F[B])(f: A => B => C) = 

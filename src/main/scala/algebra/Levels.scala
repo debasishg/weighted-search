@@ -21,14 +21,6 @@ case class Levels[T](value: List[Multiset[T]])
 
 object Levels extends Ops {
 
-  def zipL[T]: List[Multiset[T]] => List[Multiset[T]] => List[Multiset[T]] = first =>
-    second =>
-      (first, second) match {
-        case (f, Nil)           => f
-        case (Nil, s)           => s
-        case (f :: fs, s :: ss) => f.sum(s) :: zipL(fs)(ss)
-      }
-
   implicit val levelsAlternative = new Alternative[Levels] {
     def pure[A](a: A) = Levels(List(Multiset(a)))
 
