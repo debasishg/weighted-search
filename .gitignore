@@ -1,2 +1,13 @@
 *.class
 *.log
+.metals/readonly/scala/Predef.scala
+.bloop
+.metals
+project/.bloop
+target/
+project/target/
+project/metals.sbt
+project/project/metals.sbt
+project/project/project/metals.sbt
+weighted-algebra.code-workspace
+sbt.json
