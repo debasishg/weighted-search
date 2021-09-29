@@ -6,7 +6,7 @@ import cats.syntax.all._
 import cats.effect.IO
 import Ap._
 
-object WeightedSearchBFT extends App with Ops {
+object BreadthFirstRenumber extends App with Ops {
 
   /**                           10
     *        +------------------+------------------+

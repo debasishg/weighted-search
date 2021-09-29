@@ -7,11 +7,10 @@ import MSet.Multiset
 import Multiset._
 import Realm._
 import Ap._
+import Levels._
 
-object WeightedSearchCayley extends App {
+object BreadthFirstCayleyTransform extends App with Ops {
   
-  case class Levels[T](value: List[Multiset[T]])
-
 	def bfe[T](t: Tree[T]): Levels[T] = {
 
   	def f[T](t: Tree[T], ms: List[Multiset[T]]): List[Multiset[T]] = 
