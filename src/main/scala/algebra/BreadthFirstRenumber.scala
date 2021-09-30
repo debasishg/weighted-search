@@ -38,7 +38,7 @@ object BreadthFirstRenumber extends App with Ops {
     Lift((_: Unit) => (x: A) => x, ().pure[F], fa)
 
   def out(s: String) = lift {
-		(IO.println(s"out: $s")).flatMap(_ => IO.pure(s))
+    (IO.println(s"out: $s")).flatMap(_ => IO.pure(s))
   }
 
   def stages: Ap[IO, List[String]] = 
@@ -61,9 +61,9 @@ object BreadthFirstRenumber extends App with Ops {
         case Tip => Applicative[Ap[F, *]].pure(Tip)
         case Node(x, xs) => 
           liftA2 (
-						lift(f(x)), 
-						wrap(xs traverse go)
-					)((b) => (ns) => Node(b, ns)) 
+            lift(f(x)), 
+            wrap(xs traverse go)
+          )((b) => (ns) => Node(b, ns)) 
       }
     }
     lower(go(ta))

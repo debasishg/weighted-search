@@ -11,21 +11,21 @@ import Levels._
 
 object BreadthFirstCayleyTransform extends App with Ops {
   
-	def bfe[T](t: Tree[T]): Levels[T] = {
+  def bfe[T](t: Tree[T]): Levels[T] = {
 
-  	def f[T](t: Tree[T], ms: List[Multiset[T]]): List[Multiset[T]] = 
-  		(t, ms) match {
-  			case (Tip, qs) => qs
+    def f[T](t: Tree[T], ms: List[Multiset[T]]): List[Multiset[T]] = 
+  	  (t, ms) match {
+  		  case (Tip, qs) => qs
   
-  			case (Node(x, xs), q :: qs) => 
-  				Multiset.empty[T].insert(x).sum(q) :: 
-  					xs.foldRight(qs)(f)
+  		  case (Node(x, xs), q :: qs) => 
+  			  Multiset.empty[T].insert(x).sum(q) :: 
+            xs.foldRight(qs)(f)
   
-  			case (Node(x, xs), Nil) => 
-  				Multiset.empty[T].insert(x) :: 
-  					xs.foldRight(List.empty[Multiset[T]])(f) 
+        case (Node(x, xs), Nil) => 
+          Multiset.empty[T].insert(x) :: 
+            xs.foldRight(List.empty[Multiset[T]])(f) 
   
-  			case _ => ???
+        case _ => ???
   		}
 
 	  Levels(f(t, List.empty[Multiset[T]]))
@@ -51,12 +51,12 @@ object BreadthFirstCayleyTransform extends App with Ops {
 	//         f xs (Lift g y ys) = Lift (fmap ◦ g) y (runC xs ys)
   def wrap[F[_]: Applicative, A](qfa: Queue[F, A]): Queue[F, A] = {
 
-	  def f[F[_]: Applicative, A, B](qfa: Queue[F, A])(apfb: Ap[F, B]): Ap[F, (A, B)] = {
-		  (qfa, apfb) match {
-			  case (xs, Pure(y)) => toLift(().pure[F], xs.apply(Pure(y)))(_ => identity) 
+    def f[F[_]: Applicative, A, B](qfa: Queue[F, A])(apfb: Ap[F, B]): Ap[F, (A, B)] = {
+      (qfa, apfb) match {
+        case (xs, Pure(y)) => toLift(().pure[F], xs.apply(Pure(y)))(_ => identity) 
         case (xs, Lift(g, y, ys)) => toLift(y, xs.apply(ys))(a => b => b.map(g(a)))
-		  }
-	  }
+      }
+    }
 
     new Cayley[Ap[F, *], A] {
       def apply[B](apfb: Ap[F, B]): Ap[F, (A, B)] = f(qfa)(apfb)
