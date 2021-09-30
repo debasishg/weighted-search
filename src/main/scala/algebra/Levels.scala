@@ -49,6 +49,11 @@ object Levels extends Ops {
     }
   }
 
+  /**
+   * The Monad instance describes how sequencing works. 
+   * The >>= operation extends a search with a continuation: p >>= 𝑘 takes the outcomes 
+   * of the program p and searches from them using 𝑘, while adding appropriate costs.
+   */ 
   implicit def levelsMonad(implicit app: Applicative[Levels]) = new Monad[Levels] {
     def pure[A](a: A) = app.pure(a)
 
@@ -92,7 +97,18 @@ object Levels extends Ops {
     }
   }
 
+  /**
+    * Having now implemented instances of both `Alternative` and `Applicative` for Levels, 
+    * the theory of Rivas et al. [2018] establishes that `Levels` is a polynomial in the 
+    * `Alternative` and `Applicative` semiring in the Set and lax monoidal functors categories.
+    */
+
+  // The result of `pure` x assigns a cost of 0 to the value x by placing it in the first 
+  // bag in the list of outcomes, 
   def pure[T]: T => Levels[T]         = t => Levels(List(Multiset(t)))
+
+  // `wrap` xs increments the cost of xs by prepending an empty bag.
   def wrap[T]: Levels[T] => Levels[T] = xs => Levels(Multiset.empty[T] :: xs.value)
+
   def cat[T](lhs: Levels[T], rhs: Levels[T]) = lhs <+> Levels.wrap(rhs)
 }
