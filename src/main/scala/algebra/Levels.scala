@@ -2,15 +2,10 @@ package algebra
 
 import cats.{ Alternative, Applicative, Monad }
 import cats.syntax.all._
-import spire.syntax.all._
 import mset._
 import MSet.Multiset
-import Multiset._
-import Realm._
 import spire.algebra.MultiplicativeMonoid
 import spire.algebra.AdditiveMonoid
-import spire.algebra.Eq
-import spire.math.Natural
 import scala.annotation.tailrec
 
 // that Levels represents a collection of nondeterministic computations, grouped into 
@@ -18,6 +13,13 @@ import scala.annotation.tailrec
 // as an example have a look at the output of the `bfe` function that does a 
 // breadth first traversal of a tree
 case class Levels[T](value: List[Multiset[T]])
+
+/**
+ * One way to think of the Levels type is as nondeterministic computations where the outcomes 
+ * are grouped into buckets by the number of łstepsž needed to reach an outcome. For example, 
+ * the value Levels [{a}, {}, {b, c}, {d}] represents a computation which has 4 outcomes 
+ * (a, b, c and d), where a takes 0 steps to reach, b and c both take 2, and d takes 3. 
+ */
 
 object Levels extends Ops {
 

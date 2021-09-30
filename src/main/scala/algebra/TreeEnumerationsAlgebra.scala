@@ -10,18 +10,40 @@ import Levels._
 
 object TreeEnumerationsAlgebra extends App with Ops {
 
-  /** dfe :: Tree a → [a]
-    * dfe Tip = []
-    * dfe Node(x, xs) = [x] ++ choices dfe xs
-    */
+  // depth first enumeration
+  //
+  // dfe :: Tree a → [a]
+  //   dfe Tip = []
+  //   dfe Node(x, xs) = [x] ++ choices dfe xs
   def dfe[T]: Tree[T] => List[T] = {
     case Tip         => List.empty[T]
-    case Node(x, xs) => List(x) ++ choices(xs)(dfe)
+    case Node(x, xs) => List(x) ++ choices(xs)(dfe) // parent before children
   }
 
+  /**
+    * In the `Tip` case, there are no solutions, so the empty list is returned, 
+    * otherwise, the node x & xs immediately returns the solution [x] followed 
+    * by the choices offered in xs, which are extracted using `choices`
+    * 
+    * Notice how the algebra of non-determinism is modeled using `choices`,
+    * which uses the `Alternative` class to model nondeterminism: the <+> operation 
+    * represents nondeterministic choice, and empty represents no solutions. This class 
+    * assumes that <+> forms a monoid with `empty`, which means that <+> is associative 
+    * with unit `empty`. When called by `dfe`, this specialises to the instance on lists, 
+    * where empty = [], and (<+>) = (++).
+    * 
+    * Also note that we choose 2 operators to model non-determinism, `choices` (which use <+>)
+    * and (++). Both of them have different roles to play - (++) chooses between parents and 
+    * children while <+> in `choices` chooses between siblings. The definition of these operators 
+    * is what dictates the order of the search. For depth-first search, parents come before their 
+    * children, and children are ordered left-to-right. If this order is changed to children before 
+    * parents, for instance, the tree would be enumerated in post order (see `poe` below).
+    */
+
+  // post order enumeration
   def poe[T]: Tree[T] => List[T] = {
     case Tip         => List.empty[T]
-    case Node(x, xs) => choices(xs)(poe) ++ List(x)
+    case Node(x, xs) => choices(xs)(poe) ++ List(x) // children before parent
   }
 
   // bfe (x & xs) = pure x <cat> choices bfe xs 
@@ -30,7 +52,6 @@ object TreeEnumerationsAlgebra extends App with Ops {
     case Tip          => Levels(Nil)
     case Node(x, xs)  => Levels.cat(Levels.pure(x), choices(xs)(bfe))
   }
-
 
   /**                           1
     *        +------------------+------------------+
