@@ -15,7 +15,7 @@ import scala.annotation.tailrec
 case class Levels[T](value: List[Multiset[T]])
 
 /**
- * One way to think of the Levels type is as nondeterministic computations where the outcomes 
+ * Note: One way to think of the Levels type is as nondeterministic computations where the outcomes 
  * are grouped into buckets by the number of łstepsž needed to reach an outcome. For example, 
  * the value Levels [{a}, {}, {b, c}, {d}] represents a computation which has 4 outcomes 
  * (a, b, c and d), where a takes 0 steps to reach, b and c both take 2, and d takes 3. 

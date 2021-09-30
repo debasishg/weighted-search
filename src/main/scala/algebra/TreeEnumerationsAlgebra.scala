@@ -41,17 +41,37 @@ object TreeEnumerationsAlgebra extends App with Ops {
     */
 
   // post order enumeration
+  //
+  // poe :: Tree a → [a] 
+  // poe Tip = []
+  // poe (x & xs) = [x] <++> choices poe xs 
+  //   where lhs <++> rhs = rhs ++ lhs
   def poe[T]: Tree[T] => List[T] = {
     case Tip         => List.empty[T]
     case Node(x, xs) => choices(xs)(poe) ++ List(x) // children before parent
   }
 
+  // breadth first enumeration
+  //
   // bfe (x & xs) = pure x <cat> choices bfe xs 
   //   where lhs <cat> rhs = lhs <|> wrap rhs
   def bfe[T]: Tree[T] => Levels[T] = {
     case Tip          => Levels(Nil)
     case Node(x, xs)  => Levels.cat(Levels.pure(x), choices(xs)(bfe))
   }
+
+  /**
+    * Breadth first traversal results in elements in Levels, each level encoding the number of steps
+    * needed to reach the level starting from root. e.g. for the following tree, `bfe` would yield
+    * [{1}, {2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}].
+    * 
+    * The only difference between this function and dfe is the replacement of ++ with another ordering. 
+    * Have  alook at `cats` defined in `Ops`. This ordering is described by the operators 
+    * `pure`, `wrap`, and `<+>`, which assign the cost of steps.
+    * 
+    * The result of `pure x` assigns a cost of 0 to the value x by placing it in the first bag in the list 
+    * of outcomes, and `wrap` xs increments the cost of xs by prepending an empty bag.
+    */
 
   /**                           1
     *        +------------------+------------------+
