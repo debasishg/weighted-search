@@ -2,6 +2,19 @@ package algebra
 
 import cats.Applicative
 
+/**
+  * In a sense, Levels took the Alternative-Applicative semiring and facilitated the reordering of `Alternative` 
+  * expressions with the `wrap` combinator. See Levels.scala and TreeEnumerationsAsAlgebra#bfe function.
+  * 
+  * However we may also want to stage and rearrange the outcomes of programs with other effects than `Alternative`.
+  * A type to stage and reorder effects, then, can be constructed from a polynomial with Alternative swapped out 
+  * for some monoid in a monoidal category representing effects. Applicatives themselves represent effects, as it 
+  * happens, so the polynomial for rearranging and staging effects will be the polynomial over the 
+  * Applicative-Applicative semiring.
+  * 
+  *
+  */
+
 // The `Ap` type is the free applicative: it is a list of effectful computations, 
 // terminated by a pure value, and interspersed with functions to combine the results of each computation.
 abstract class Ap[F[_], +A]

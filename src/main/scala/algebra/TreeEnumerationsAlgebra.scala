@@ -71,6 +71,11 @@ object TreeEnumerationsAlgebra extends App with Ops {
     * 
     * The result of `pure x` assigns a cost of 0 to the value x by placing it in the first bag in the list 
     * of outcomes, and `wrap` xs increments the cost of xs by prepending an empty bag.
+    * 
+    * The core of `bfe` is the Levels type that allows us to stage and rearrange the outcomes of programs 
+    * with nondeterminism using `Alternative`, `Applicative`, and `wrap`; we may also want to stage and rearrange 
+    * the outcomes of programs with other effects. Take a look at `Ap` typeclass and `BreadthFirstRenumber`.
+    * 
     */
 
   /**                           1

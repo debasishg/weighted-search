@@ -16,7 +16,7 @@ case class Levels[T](value: List[Multiset[T]])
 
 /**
  * Note: One way to think of the Levels type is as nondeterministic computations where the outcomes 
- * are grouped into buckets by the number of łstepsž needed to reach an outcome. For example, 
+ * are grouped into buckets by the number of steps needed to reach an outcome. For example, 
  * the value Levels [{a}, {}, {b, c}, {d}] represents a computation which has 4 outcomes 
  * (a, b, c and d), where a takes 0 steps to reach, b and c both take 2, and d takes 3. 
  */
@@ -101,6 +101,15 @@ object Levels extends Ops {
     * Having now implemented instances of both `Alternative` and `Applicative` for Levels, 
     * the theory of Rivas et al. [2018] establishes that `Levels` is a polynomial in the 
     * `Alternative` and `Applicative` semiring in the Set and lax monoidal functors categories.
+    * 
+    * A semiring is defined by 2 monoids - the additive monoid and the multiplicative monoid along
+    * with  few laws (see paper for details). Now in cats the additive monoid is given by `MonoidK`
+    * via its `<+>` / `combineK` operation, while the multiplicative monoid is given by `Applicative`
+    * via its `<*>` / `ap` operation. To define a semiring we need to supply an instance of `Applicative`
+    * and `MonoidK` for a type. In cats, this is the `Alternative` typeclass, which extends both 
+    * `Applicative` and `MonoidK`.
+    * 
+    * For details, see https://typelevel.org/blog/2018/11/02/semirings.html
     */
 
   // The result of `pure` x assigns a cost of 0 to the value x by placing it in the first 
