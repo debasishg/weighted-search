@@ -6,7 +6,7 @@ lazy val commonSettings: Seq[Setting[_]] = Seq(
   organization := "net.debasishg",
   version := "0.01",
   scalaVersion := "2.13.6",
-
+  scalafmtOnCompile := true,
   scalacOptions in Compile ++= Seq( "-unchecked", "-feature", "-language:postfixOps", "-deprecation" ),
   resolvers += Resolver.sonatypeRepo("snapshots")
 )
