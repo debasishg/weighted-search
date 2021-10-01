@@ -11,8 +11,6 @@ import cats.Applicative
   * for some monoid in a monoidal category representing effects. Applicatives themselves represent effects, as it 
   * happens, so the polynomial for rearranging and staging effects will be the polynomial over the 
   * Applicative-Applicative semiring.
-  * 
-  *
   */
 
 // The `Ap` type is the free applicative: it is a list of effectful computations, 
@@ -60,9 +58,9 @@ object Ap extends Ops {
         case (Pure(f), Lift(g, y, ys)) => toLift(y, ys)((a) => (b) => f(g(a)(b)))
         case (Lift(f, x, xs), Pure(y)) => toLift(x, xs)((x) => (xs) => f(x)(xs)(y))
         case (Lift(f, x, xs), Lift(g, y, ys)) => 
-  					toLift(
-  						liftA2 (x, y) ((a) => (b) => (a, b)),
-  						liftA2 (xs, ys) ((a) => (b) => (a, b)) 
+          toLift(
+            liftA2 (x, y) ((a) => (b) => (a, b)),
+            liftA2 (xs, ys) ((a) => (b) => (a, b)) 
           )((xs) => (ys) => f(xs._1)(ys._1)(g(xs._2)(ys._2))) 
       }
   }
