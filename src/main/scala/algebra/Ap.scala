@@ -6,9 +6,13 @@ import cats.Applicative
   * expressions with the `wrap` combinator. See Levels.scala and TreeEnumerationsAsAlgebra#bfe function.
   *
   * However we may also want to stage and rearrange the outcomes of programs with other effects than `Alternative`. A
-  * type to stage and reorder effects, then, can be constructed from a polynomial with Alternative swapped out for some
-  * monoid in a monoidal category representing effects. Applicatives themselves represent effects, as it happens, so the
-  * polynomial for rearranging and staging effects will be the polynomial over the Applicative-Applicative semiring.
+  * type to stage and reorder effects, then, can be constructed from a polynomial with `Alternative` swapped out for
+  * some monoid in a monoidal category representing effects. Applicatives themselves represent effects, as it happens,
+  * so the polynomial for rearranging and staging effects will be the polynomial over the `Applicative`-`Applicative`
+  * semiring.
+  *
+  * The `Levels` type takes its structure from the free monoid (i.e. it is a list, albeit with some extra structure):
+  * similarly, the polynomial of the `Applicative`-`Applicative` semiring takes its structure from the free applicative
   */
 
 // The `Ap` type is the free applicative: it is a list of effectful computations,
@@ -32,12 +36,14 @@ object Ap extends Ops {
 
   // lift :: f a → Ap f a
   // lift x = Lift const x (Pure ())
+  //
   // Any `f a` can be lifted into the free applicative
   def lift[F[_], A, B](fa: F[A]): Ap[F, A] = Lift(Function.const[A, Unit], fa, Pure(()))
 
   // lower :: Applicative f ⇒ Ap f a → f a
   // lower (Pure x) = pure x
   // lower (Lift f x xs) = liftA2 f x (lower xs)
+  //
   // if `f` is itself `Applicative`, `lower` defines conversion in the other direction.
   // It uses the `liftA2` function, which combines effectful computations with a binary function
   def lower[F[_]: Applicative, A](apfa: Ap[F, A]): F[A] =
@@ -50,6 +56,10 @@ object Ap extends Ops {
   implicit def apApplicative[F[_]: Applicative]: Applicative[Ap[F, *]] = new Applicative[Ap[F, *]] {
     def pure[A](a: A) = Pure(a)
 
+    // Similar to the Monoid instance for the free monoid, the Applicative instance for the
+    // free applicative performs concatenation. This applicative is similar to long zip (zipL),
+    // or <+> on Levels. The paper also contains another version of `ap` which is similar to
+    // (++) on lists.
     def ap[A, B](ff: Ap[F, A => B])(fa: Ap[F, A]): Ap[F, B] =
       (ff, fa) match {
         case (Pure(f), Pure(a))        => Pure(f(a))

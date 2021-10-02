@@ -8,16 +8,6 @@ import Ap._
 
 object BreadthFirstRenumber extends App with Ops {
 
-  /** 10
-    * +------------------+------------------+
-    * | | | 20 30 40
-    * | |
-    * +---+--+ +---+---+
-    * | | | | 50 60 70 80
-    * | |
-    * +-+-+ +---+----+
-    * | | | | 90 100 110 120
-    */
   val source =
     Node(
       10,
@@ -38,6 +28,7 @@ object BreadthFirstRenumber extends App with Ops {
     (IO.println(s"out: $s")).flatMap(_ => IO.pure(s))
   }
 
+  // rather than altering the order of nondeterministic results, this alters the order of effect execution
   def stages: Ap[IO, List[String]] =
     List(
       wrap(wrap(wrap(out("a")))),
@@ -47,11 +38,20 @@ object BreadthFirstRenumber extends App with Ops {
       wrap(out("e"))
     ).sequence
 
+  /** The function `sequence` works on a list of effectful computations, runs each effect, and returns the list of the
+    * results of each computation. In this example it evaluates each of the Ap IO computations in turn: as can be seen
+    * in the output on the right, each letter is printed in order of how many wraps it was nested under, starting with
+    * the fewest, "d", and ending with "a", which was nested under 3 wraps. Notice also that despite the reordering of
+    * effects the pure value itself is unaffected: the strings in the returned list are in precisely the same order as
+    * they were given.
+    */
   import cats.effect.unsafe.implicits.global
 
   println(lower(stages).unsafeRunSync())
 
   // bft :: Applicative f ⇒ (a → f b) → Tree a → f (Tree b)
+  // In this function, the effects will be evaluated in the breadth first order, since every
+  // level gets an additional `wrap`
   def bft[F[_]: Applicative, A, B](f: A => F[B], ta: Tree[A]): F[Tree[B]] = {
     def go(ta: Tree[A]): Ap[F, Tree[B]] = {
       ta match {
