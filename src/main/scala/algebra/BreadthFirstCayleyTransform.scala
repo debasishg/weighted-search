@@ -11,6 +11,11 @@ import Levels._
 
 object BreadthFirstCayleyTransform extends App with Ops {
 
+  // addressing the inefficiency in TreeEnumerationsAlgebra.bfe by performing the zipping
+  // in the recursive call itself, fusing the two steps together.
+  // This implementation of `bfe` fuses away the call to `choices`: instead of mapping over
+  // the list of children and then using `<+>` to zip them together, for every child `f` performs
+  // the zipping and recursion in the same step.
   def bfe[T](t: Tree[T]): Levels[T] = {
 
     def f[T](t: Tree[T], ms: List[Multiset[T]]): List[Multiset[T]] =

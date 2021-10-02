@@ -48,6 +48,10 @@ object TreeEnumerationsAlgebra extends App with Ops {
 
   // breadth first enumeration
   //
+  // Inefficient though, O(n^2), since the children of a node are traversed once in a recursive call,
+  // and then combined using a zip-like function (<+> in the case of bfe). For a more efficient
+  // implementation, have a look at `BreadthFirstCayleyTransform.bfe`
+  //
   // bfe (x & xs) = pure x <cat> choices bfe xs
   //   where lhs <cat> rhs = lhs <|> wrap rhs
   def bfe[T]: Tree[T] => Levels[T] = {
@@ -71,16 +75,6 @@ object TreeEnumerationsAlgebra extends App with Ops {
     * outcomes of programs with other effects. Take a look at `Ap` typeclass and `BreadthFirstRenumber`.
     */
 
-  /** 1
-    * +------------------+------------------+
-    * | | | 2 3 4
-    * | |
-    * +---+--+ +---+---+
-    * | | | | 5 6 7 8
-    * | |
-    * +-+-+ +---+----+
-    * | | | | 9 10 11 12
-    */
   val source =
     Node(
       1,
