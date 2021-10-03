@@ -66,6 +66,12 @@ object BreadthFirstRenumber extends App with Ops {
     lower(go(ta))
   }
 
+  /** While elegant and theoretically interesting, the above implementation of `bft` is slow. At every node in the tree,
+    * `bft` is recursively called on the children of the node, and then the constructed effects are combined using <*>.
+    * Unfortunately, since <*> is O(n), this makes the overall complexity of bft O(n^2). Take a look at
+    * `BreadthFirstCayleyTransform.bft` for a more efficient version using a new technique.
+    */
+
   // evalState :: State s a → s → a
   def evalState[S, A](st: State[S, A], s: S): A = st.run(s).value._2
 

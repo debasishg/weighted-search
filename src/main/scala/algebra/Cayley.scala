@@ -23,6 +23,7 @@ object Cayley {
   // instance Functor f ⇒ Applicative (Cayley f ) where
   // pure x = Cayley (fmap (x, ))
   // fs <*> xs = Cayley (fmap (𝜆(f , (x, xs)) → (f x, xs)) ◦ runC fs ◦ runC xs)
+  // Note that the applicative here is basically a form of function composition
   implicit def applicative[F[_]: Functor] = new Applicative[Cayley[F, *]] {
     def pure[A](a: A) = new Cayley[F, A] {
       def apply[B](fb: F[B]): F[(A, B)] = fb.tupleLeft(a)

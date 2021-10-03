@@ -48,6 +48,10 @@ object BreadthFirstCayleyTransform extends App with Ops {
 
   println(s"bfe: ${bfe(source)}")
 
+  // We define a queue of applicative effects; it is the Cayley transform of the `Ap` type.
+  // Previously also we were processing a sequence of applicative effects, but now we are working
+  // on the applicative that's basically a function composition - hence more efficient. This
+  // efficient version of `Ap` gives us an O(n) `bft`
   type Queue[F[_], A] = Cayley[Ap[F, *], A]
 
   // wrap xs = Cayley (f xs)
