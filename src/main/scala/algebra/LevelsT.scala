@@ -4,6 +4,7 @@ import cats.{ Alternative, Applicative, Functor, Monad }
 import cats.syntax.all._
 import mset._
 import MSet.Multiset
+import annotation.tailrec
 
 // newtype LevelsT m a = LevelsT {runLevelsT :: m (Maybe (Bag a, LevelsT m a)) }
 final case class LevelsT[F[_], A](value: F[Option[(Multiset[A], LevelsT[F, A])]])
@@ -17,9 +18,9 @@ object LevelsT extends Ops {
     }
   }
 
-  implicit def levelsTAlternative[F[_]: Monad] = new Alternative[LevelsT[F, *]] {
-    def pure[A](a: A) = LevelsT(Monad[F].pure(Some((Multiset(a), LevelsT(Monad[F].pure(None))))))
-    def empty[A]      = LevelsT(Monad[F].pure(None))
+  implicit def levelsTAlternative[F[_]](implicit ev: Monad[F]) = new Alternative[LevelsT[F, *]] {
+    def pure[A](a: A) = LevelsT(ev.pure(Some((Multiset(a), LevelsT(ev.pure(None))))))
+    def empty[A]      = LevelsT(ev.pure(None))
     def combineK[A](l: LevelsT[F, A], r: LevelsT[F, A]): LevelsT[F, A] = {
       def go: Option[(Multiset[A], LevelsT[F, A])] => Option[(Multiset[A], LevelsT[F, A])] => Option[
         (Multiset[A], LevelsT[F, A])
@@ -51,26 +52,47 @@ object LevelsT extends Ops {
   def choices[F[_]: Monad, A, B](as: Multiset[A])(f: A => LevelsT[F, B]): LevelsT[F, B] =
     (f, as.toList) match {
       case (_, Nil)      => LevelsT(Applicative[F].pure(None))
-      case (fn, x :: xs) => Alternative[LevelsT[F, *]].combineK(fn(x), choices(xs)(fn))
+      case (fn, x :: xs) => fn(x) <+> choices(xs)(fn)
     }
 
   // wrap xs = LevelsT (pure (Just ( {} , xs)))
   def wrap[F[_]: Monad, A](l: LevelsT[F, A]) = LevelsT((Option((Multiset.empty[A], l))).pure[F])
 
-  implicit def levelsTMonad[F[_]: Monad](implicit app: Applicative[LevelsT[F, *]]) = new Monad[LevelsT[F, *]] {
-    def pure[A](a: A) = app.pure(a)
+  implicit def levelsTMonad[F[_]](implicit app: Applicative[LevelsT[F, *]], ev: Monad[F]) =
+    new Monad[LevelsT[F, *]] {
+      def pure[A](a: A) = app.pure(a)
 
-    override def flatMap[A, B](fa: LevelsT[F, A])(f: A => LevelsT[F, B]): LevelsT[F, B] = {
+      override def flatMap[A, B](fa: LevelsT[F, A])(f: A => LevelsT[F, B]): LevelsT[F, B] = {
 
-      def go(fa: Option[(Multiset[A], LevelsT[F, A])]): LevelsT[F, B] =
-        fa match {
-          case None => pure(None.asInstanceOf[B])
-          case Some((x, xs)) =>
-            choices(x)(f) <+> wrap(flatMap(xs)(f))
-        }
+        def go(fa: Option[(Multiset[A], LevelsT[F, A])]): LevelsT[F, B] =
+          fa match {
+            case None => pure(None.asInstanceOf[B])
+            case Some((x, xs)) =>
+              choices(x)(f) <+> wrap(flatMap(xs)(f))
+          }
 
-      LevelsT(fa.value.flatMap(a => go(a).value))
+        LevelsT(fa.value.flatMap(a => go(a).value))
+      }
+
+      def tailRecM[A, B](value: A)(f: A => LevelsT[F, Either[A, B]]): LevelsT[F, B] = {
+
+        def go(fa: Option[(Multiset[Either[A, B]], LevelsT[F, Either[A, B]])]): LevelsT[F, B] =
+          fa match {
+            case None => pure(None.asInstanceOf[B])
+            case Some((x, xs)) =>
+              x.occurList match {
+                case Nil => LevelsT(ev.pure(None))
+                case (ab, n) :: tail =>
+                  ab match {
+                    case Left(a)  => LevelsT(go0(f(a) <+> xs))
+                    case Right(b) => pure(b)
+                  }
+              }
+          }
+
+        def go0(fab: LevelsT[F, Either[A, B]]) = fab.value.flatMap(a => go(a).value)
+
+        LevelsT(f(value).value.flatMap(a => go(a).value))
+      }
     }
-    def tailRecM[A, B](value: A)(f: A => LevelsT[F, Either[A, B]]): LevelsT[F, B] = ???
-  }
 }
