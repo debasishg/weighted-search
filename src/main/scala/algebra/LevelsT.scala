@@ -6,8 +6,23 @@ import mset._
 import MSet.Multiset
 import annotation.tailrec
 
+/** Monads such as the Levels type are a convenient abstraction that enable specific effects to be expressed in a
+  * controlled manner within a program. The problem with monads, however, is that they do not generally compose with one
+  * another. The solution to this is to provide a monad transformer, which takes a monad m, and augments it to a monad t
+  * m with additional effects.
+  *
+  * The following introduces the `LevelsT` monad transformer, which adds the effect of breadth-first backtracking with
+  * `Levels` to an arbitrary monad
+  */
+
 // newtype LevelsT m a = LevelsT {runLevelsT :: m (Maybe (Bag a, LevelsT m a)) }
 final case class LevelsT[F[_], A](value: F[Option[(Multiset[A], LevelsT[F, A])]])
+
+/** This transforms a monad `m` by adding a list (of bags) whose constructors are nested by m. The list [{1},{2},{3}]
+  * could be encoded in `LevelsT m (Just ({1}, m (Just ({2}, m (Just ({3}, m Nothing))))))`, although this
+  * representation intersperses every bag in the list with some effect m. The cons constructor `(:)` has been replaced
+  * by `Just`, and the `nil` constructor `([])` has been replaced by `Nothing`.
+  */
 
 object LevelsT extends Ops {
   implicit def levelsTFunctor[F[_]: Functor] = new Functor[LevelsT[F, *]] {
@@ -95,4 +110,47 @@ object LevelsT extends Ops {
         LevelsT(f(value).value.flatMap(a => go(a).value))
       }
     }
+}
+
+import cats.effect.IO
+object LevelsTApp extends App {
+  import LevelsT._
+
+  def printLevelsT(l: LevelsT[IO, Int], acc: Multiset[Int]): IO[Unit] = {
+    l.value.flatMap { ops =>
+      ops match {
+        case None          => IO.println(acc.occurList)
+        case Some((x, xs)) => printLevelsT(xs, acc.sum(x))
+      }
+    }
+  }
+
+  val x = LevelsT[IO, Int](
+    IO(
+      Some(
+        (
+          Multiset(1),
+          LevelsT[IO, Int](
+            IO(Some((Multiset(2), LevelsT[IO, Int](IO(Some((Multiset(3), LevelsT[IO, Int](IO(None)))))))))
+          )
+        )
+      )
+    )
+  )
+  val y = LevelsT[IO, Int](
+    IO(
+      Some(
+        (
+          Multiset(10),
+          LevelsT[IO, Int](
+            IO(Some((Multiset(2), LevelsT[IO, Int](IO(Some((Multiset(30), LevelsT[IO, Int](IO(None)))))))))
+          )
+        )
+      )
+    )
+  )
+  import cats.effect.unsafe.implicits.global
+  import cats.Id
+
+  printLevelsT(x <+> y, Multiset.empty[Int]).unsafeRunSync()
 }
