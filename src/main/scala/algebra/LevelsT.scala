@@ -4,6 +4,8 @@ import cats.{ Alternative, Applicative, Functor, Monad }
 import cats.syntax.all._
 import mset._
 import MSet.Multiset
+import spire.algebra.{ AdditiveMonoid, MultiplicativeMonoid }
+import spire.math.Natural
 import annotation.tailrec
 
 /** Monads such as the Levels type are a convenient abstraction that enable specific effects to be expressed in a
@@ -34,8 +36,8 @@ object LevelsT extends Ops {
   }
 
   implicit def levelsTAlternative[F[_]](implicit ev: Monad[F]) = new Alternative[LevelsT[F, *]] {
-    def pure[A](a: A) = LevelsT(ev.pure(Some((Multiset(a), LevelsT(ev.pure(None))))))
-    def empty[A]      = LevelsT(ev.pure(None))
+    def pure[A](a: A): LevelsT[F, A] = LevelsT(ev.pure(Some((Multiset(a), LevelsT(ev.pure(None))))))
+    def empty[A]                     = LevelsT(ev.pure(None))
     def combineK[A](l: LevelsT[F, A], r: LevelsT[F, A]): LevelsT[F, A] = {
       def go: Option[(Multiset[A], LevelsT[F, A])] => Option[(Multiset[A], LevelsT[F, A])] => Option[
         (Multiset[A], LevelsT[F, A])
@@ -64,18 +66,17 @@ object LevelsT extends Ops {
     }
   }
 
-  def choices[F[_]: Monad, A, B](as: Multiset[A])(f: A => LevelsT[F, B]): LevelsT[F, B] =
+  def choices[F[_]: Monad, A, B](
+      as: Multiset[A]
+  )(f: A => LevelsT[F, B]): LevelsT[F, B] =
     (f, as.toList) match {
-      case (_, Nil)      => LevelsT(Applicative[F].pure(None))
-      case (fn, x :: xs) => fn(x) <+> choices(xs)(fn)
+      case (_, Nil)      => LevelsT(Monad[F].pure(None))
+      case (fn, x :: xs) => fn(x) <+> choices(MSet.fromSeq[Natural, A](xs))(fn)
     }
 
-  // wrap xs = LevelsT (pure (Just ( {} , xs)))
-  def wrap[F[_]: Monad, A](l: LevelsT[F, A]) = LevelsT((Option((Multiset.empty[A], l))).pure[F])
-
-  implicit def levelsTMonad[F[_]](implicit app: Applicative[LevelsT[F, *]], ev: Monad[F]) =
+  implicit def levelsTMonad[F[_]](implicit ev: Monad[F]) =
     new Monad[LevelsT[F, *]] {
-      def pure[A](a: A) = app.pure(a)
+      def pure[A](a: A) = Applicative[LevelsT[F, *]].pure(a)
 
       override def flatMap[A, B](fa: LevelsT[F, A])(f: A => LevelsT[F, B]): LevelsT[F, B] = {
 
@@ -86,6 +87,8 @@ object LevelsT extends Ops {
               choices(x)(f) <+> wrap(flatMap(xs)(f))
           }
 
+        def wrap[A](xs: LevelsT[F, A]) = LevelsT((Option((Multiset.empty[A], xs))).pure[F])
+
         LevelsT(fa.value.flatMap(a => go(a).value))
       }
 
@@ -93,7 +96,7 @@ object LevelsT extends Ops {
 
         def go(fa: Option[(Multiset[Either[A, B]], LevelsT[F, Either[A, B]])]): LevelsT[F, B] =
           fa match {
-            case None => pure(None.asInstanceOf[B])
+            case None => LevelsT(ev.pure(None))
             case Some((x, xs)) =>
               x.occurList match {
                 case Nil => LevelsT(ev.pure(None))
@@ -119,8 +122,10 @@ object LevelsTApp extends App {
   def printLevelsT(l: LevelsT[IO, Int], acc: Multiset[Int]): IO[Unit] = {
     l.value.flatMap { ops =>
       ops match {
-        case None          => IO.println(acc.occurList)
-        case Some((x, xs)) => printLevelsT(xs, acc.sum(x))
+        case None => IO.println(s"List : ${acc.occurList}")
+        case Some((x, xs)) => {
+          printLevelsT(xs, acc.sum(x))
+        }
       }
     }
   }
@@ -149,8 +154,12 @@ object LevelsTApp extends App {
       )
     )
   )
+
   import cats.effect.unsafe.implicits.global
-  import cats.Id
 
   printLevelsT(x <+> y, Multiset.empty[Int]).unsafeRunSync()
+  printLevelsT(x >> y, Multiset.empty[Int]).unsafeRunSync()
+  printLevelsT(x >>= (_ => y), Multiset.empty[Int]).unsafeRunSync()
+  val a = x >>= ((a: Int) => LevelsT[IO, Int](IO(Some((Multiset(a * 2), LevelsT[IO, Int](IO(None)))))))
+  printLevelsT(a, Multiset.empty[Int]).unsafeRunSync()
 }
