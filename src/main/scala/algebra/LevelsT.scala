@@ -82,9 +82,8 @@ object LevelsT extends Ops {
 
         def go(fa: Option[(Multiset[A], LevelsT[F, A])]): LevelsT[F, B] =
           fa match {
-            case None => pure(None.asInstanceOf[B])
-            case Some((x, xs)) =>
-              choices(x)(f) <+> wrap(flatMap(xs)(f))
+            case None          => pure(None.asInstanceOf[B])
+            case Some((x, xs)) => choices(x)(f) <+> wrap(flatMap(xs)(f))
           }
 
         def wrap[A](xs: LevelsT[F, A]) = LevelsT((Option((Multiset.empty[A], xs))).pure[F])
@@ -122,10 +121,8 @@ object LevelsTApp extends App {
   def printLevelsT(l: LevelsT[IO, Int], acc: Multiset[Int]): IO[Unit] = {
     l.value.flatMap { ops =>
       ops match {
-        case None => IO.println(s"List : ${acc.occurList}")
-        case Some((x, xs)) => {
-          printLevelsT(xs, acc.sum(x))
-        }
+        case None          => IO.println(s"List : ${acc.occurList}")
+        case Some((x, xs)) => printLevelsT(xs, acc.sum(x))
       }
     }
   }
