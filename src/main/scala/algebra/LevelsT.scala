@@ -18,7 +18,7 @@ import annotation.tailrec
   */
 
 // newtype LevelsT m a = LevelsT {runLevelsT :: m (Maybe (Bag a, LevelsT m a)) }
-final case class LevelsT[F[_], A](value: F[Option[(Multiset[A], LevelsT[F, A])]])
+final case class LevelsT[F[+_], A](value: F[Option[(Multiset[A], LevelsT[F, A])]])
 
 /** This transforms a monad `m` by adding a list (of bags) whose constructors are nested by m. The list [{1},{2},{3}]
   * could be encoded in `LevelsT m (Just ({1}, m (Just ({2}, m (Just ({3}, m Nothing))))))`, although this
@@ -27,7 +27,8 @@ final case class LevelsT[F[_], A](value: F[Option[(Multiset[A], LevelsT[F, A])]]
   */
 
 object LevelsT extends Ops {
-  implicit def levelsTFunctor[F[_]: Functor] = new Functor[LevelsT[F, *]] {
+
+  implicit def levelsTFunctor[F[+_]: Functor] = new Functor[LevelsT[F, *]] {
     override def map[A, B](fa: LevelsT[F, A])(f: A => B): LevelsT[F, B] = {
       def go(fa: LevelsT[F, A]): LevelsT[F, B] =
         LevelsT(fa.value.map { _.map { case (b, l) => (b.map(f), go(l)) } })
@@ -35,7 +36,7 @@ object LevelsT extends Ops {
     }
   }
 
-  implicit def levelsTAlternative[F[_]](implicit ev: Monad[F]) = new Alternative[LevelsT[F, *]] {
+  implicit def levelsTAlternative[F[+_]](implicit ev: Monad[F]) = new Alternative[LevelsT[F, *]] {
     def pure[A](a: A): LevelsT[F, A] = LevelsT(ev.pure(Some((Multiset(a), LevelsT(ev.pure(None))))))
     def empty[A]                     = LevelsT(ev.pure(None))
     def combineK[A](l: LevelsT[F, A], r: LevelsT[F, A]): LevelsT[F, A] = {
@@ -66,7 +67,7 @@ object LevelsT extends Ops {
     }
   }
 
-  def choices[F[_]: Monad, A, B](
+  def choices[F[+_]: Monad, A, B](
       as: Multiset[A]
   )(f: A => LevelsT[F, B]): LevelsT[F, B] =
     (f, as.toList) match {
@@ -74,7 +75,7 @@ object LevelsT extends Ops {
       case (fn, x :: xs) => fn(x) <+> choices(MSet.fromSeq[Natural, A](xs))(fn)
     }
 
-  implicit def levelsTMonad[F[_]](implicit ev: Monad[F]) =
+  implicit def levelsTMonad[F[+_]](implicit ev: Monad[F]) =
     new Monad[LevelsT[F, *]] {
       def pure[A](a: A) = Applicative[LevelsT[F, *]].pure(a)
 
@@ -112,6 +113,18 @@ object LevelsT extends Ops {
         LevelsT(f(value).value.flatMap(a => go(a).value))
       }
     }
+
+  // smart constructor
+  def fromList[F[+_]: Applicative, A](msets: List[Multiset[A]]): LevelsT[F, A] = {
+
+    def go(toAdd: List[Multiset[A]], alreadyAdded: LevelsT[F, A]): LevelsT[F, A] =
+      toAdd match {
+        case Nil     => alreadyAdded
+        case m :: ms => go(ms, LevelsT[F, A](Some((m, alreadyAdded)).pure[F]))
+      }
+
+    go(msets.reverse, LevelsT[F, A](None.pure[F]))
+  }
 }
 
 import cats.effect.IO
@@ -159,4 +172,7 @@ object LevelsTApp extends App {
   printLevelsT(x >>= (_ => y), Multiset.empty[Int]).unsafeRunSync()
   val a = x >>= ((a: Int) => LevelsT[IO, Int](IO(Some((Multiset(a * 2), LevelsT[IO, Int](IO(None)))))))
   printLevelsT(a, Multiset.empty[Int]).unsafeRunSync()
+  val m = fromList[IO, Int](List(Multiset(1), Multiset(2), Multiset(3)))
+  printLevelsT(x, Multiset.empty[Int]).unsafeRunSync()
+  printLevelsT(m, Multiset.empty[Int]).unsafeRunSync()
 }
