@@ -8,6 +8,15 @@ import mset._
 import MSet.Multiset
 import Levels._
 
+/** The two most common strategies for exploring the solutions of a nondeterministic program are depth-first and
+  * breadth-first. It is well known that a depth-first strategy produces a list of solutions, and that the underlying
+  * structure of lists are free monoids where the monoid allows solutions to be listed in order. Less well known is the
+  * fact that a breadth-first strategy produces a tree that can be thought of as a list of bags, and that the underlying
+  * structure here is that of free semirings. Semirings are a structure that involve two monoids, and in this case one
+  * is for sequential and the other is for parallel composition of solutions. For depth-first search, parents come
+  * before their children, and children are ordered left-to-right. If this order is changed to children before parents,
+  * for instance, the tree would be enumerated in post order.
+  */
 object TreeEnumerationsAlgebra extends App with Ops {
 
   // depth first enumeration
